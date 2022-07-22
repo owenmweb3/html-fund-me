@@ -2,13 +2,13 @@ import { ethers } from "./ethers-5.6.esm.min.js"
 import { abi, contractAddress } from "./constants.js"
 
 const connectButton = document.getElementById("connectButton")
-const withdrawButton = document.getElementById("withdrawButton")
 const fundButton = document.getElementById("fundButton")
-const balanceButton = document.getElementById("balanceButton")
+const getBalanceButton = document.getElementById("getBalanceButton")
+const withdrawButton = document.getElementById("withdrawButton")
 connectButton.onclick = connect
-withdrawButton.onclick = withdraw
 fundButton.onclick = fund
-balanceButton.onclick = getBalance
+getBalanceButton.onclick = getBalance
+withdrawButton.onclick = withdraw
 
 async function connect() {
   if (typeof window.ethereum !== "undefined") {
@@ -17,7 +17,7 @@ async function connect() {
     } catch (error) {
       console.log(error)
     }
-    connectButton.innerHTML = "Connected"
+    connectButton.innerHTML = "Connected!"
     const accounts = await ethereum.request({ method: "eth_accounts" })
     console.log(accounts)
   } else {
@@ -25,17 +25,36 @@ async function connect() {
   }
 }
 
+// async function withdraw() {
+//   console.log(`Withdrawing...`)
+//   if (typeof window.ethereum !== "undefined") {
+//     const provider = new ethers.providers.Web3Provider(window.ethereum)
+//     const signer = provider.getSigner()
+//     const contract = new ethers.Contract(contractAddress, abi, signer)
+//     try {
+//       const transactionResponse = await contract.withdraw()
+//       await listenForTransactionMine(transactionResponse, provider)
+//     } catch (error) {
+//       console.log(error)
+//     }
+//   } else {
+//     withdrawButton.innerHTML = "Please install MetaMask"
+//   }
+// }
+
 async function withdraw() {
-  console.log(`Withdrawing...`)
+  console.log("Withdrawing...")
   if (typeof window.ethereum !== "undefined") {
     const provider = new ethers.providers.Web3Provider(window.ethereum)
     const signer = provider.getSigner()
     const contract = new ethers.Contract(contractAddress, abi, signer)
     try {
+      //why dont we have to connect the contract
       const transactionResponse = await contract.withdraw()
       await listenForTransactionMine(transactionResponse, provider)
-    } catch (error) {
-      console.log(error)
+      console.log("Done!")
+    } catch (e) {
+      console.log(e)
     }
   } else {
     withdrawButton.innerHTML = "Please install MetaMask"
@@ -53,7 +72,9 @@ async function fund() {
       const transactionResponse = await contract.fund({
         value: ethers.utils.parseEther(ethAmount),
       })
+
       await listenForTransactionMine(transactionResponse, provider)
+      console.log("Done!")
     } catch (error) {
       console.log(error)
     }
@@ -62,23 +83,33 @@ async function fund() {
   }
 }
 
+// async function getBalance() {
+//   if (typeof window.ethereum !== "undefined") {
+//     const provider = new ethers.providers.Web3Provider(window.ethereum)
+//     try {
+//       const balance = await provider.getBalance(contractAddress)
+//       console.log(ethers.utils.formatEther(balance))
+//     } catch (error) {
+//       console.log(error)
+//     }
+//   } else {
+//     balanceButton.innerHTML = "Please install MetaMask"
+//   }
+// }
+
 async function getBalance() {
   if (typeof window.ethereum !== "undefined") {
     const provider = new ethers.providers.Web3Provider(window.ethereum)
-    try {
-      const balance = await provider.getBalance(contractAddress)
-      console.log(ethers.utils.formatEther(balance))
-    } catch (error) {
-      console.log(error)
-    }
-  } else {
-    balanceButton.innerHTML = "Please install MetaMask"
+    const balance = await provider.getBalance(contractAddress)
+    console.log(ethers.utils.formatEther(balance) + " ETH")
   }
 }
 
 function listenForTransactionMine(transactionResponse, provider) {
   console.log(`Mining ${transactionResponse.hash}`)
   return new Promise((resolve, reject) => {
+    // I dont understand the syntax here (response vs. receipt),
+    // why is transactionReceipt a parameter and where does the value come from?
     provider.once(transactionResponse.hash, (transactionReceipt) => {
       console.log(
         `Completed with ${transactionReceipt.confirmations} confirmations. `
